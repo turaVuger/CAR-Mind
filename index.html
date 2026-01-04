@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профессиональный Помощник Авто</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f4;
+            --section-bg: white;
+            --text-color: #333;
+            --input-bg: white;
+            --button-bg: #007bff;
+            --button-hover: #0056b3;
+            --delete-bg: #dc3545;
+            --tab-bg: #eee;
+            --tab-active: white;
+            --border-color: #ddd;
+            --success: #28a745;
+            --error: #dc3545;
+        }
+        body.dark {
+            --bg-color: #1e1e1e;
+            --section-bg: #2c2c2c;
+            --text-color: #ddd;
+            --input-bg: #333;
+            --button-bg: #007bff;
+            --button-hover: #0056b3;
+            --delete-bg: #dc3545;
+            --tab-bg: #444;
+            --tab-active: #2c2c2c;
+            --border-color: #555;
+        }
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background: var(--bg-color); color: var(--text-color); position: relative; }
+        h1, h2 { text-align: center; color: var(--text-color); }
+        section { background: var(--section-bg); padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        form { display: grid; gap: 15px; }
+        input, select, button { padding: 12px; font-size: 16px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-color); }
+        button { background: var(--button-bg); color: white; border: none; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: var(--button-hover); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid var(--border-color); padding: 10px; text-align: left; }
+        th { background: var(--tab-bg); }
+        .delete-btn { background: var(--delete-bg); color: white; padding: 6px 12px; border: none; cursor: pointer; }
+        #car-select { font-size: 18px; margin-bottom: 20px; }
+        #add-car-form { display: none; }
+        .tab { display: inline-block; padding: 10px 20px; background: var(--tab-bg); cursor: pointer; margin-right: 5px; border-radius: 4px 4px 0 0; }
+        .tab.active { background: var(--tab-active); border-bottom: none; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        canvas { max-width: 100%; margin-top: 20px; }
+        #theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 10px; border-radius: 50%; width: 50px; height: 50px; }
+        .reminder { color: #dc3545; font-weight: bold; }
+        .warning { color: #ffc107; font-weight: bold; }
+        .ok { color: #28a745; }
+        img { max-width: 100%; height: auto; border: 1px solid var(--border-color); border-radius: 4px; margin-top: 10px; }
+        .doc-reminder { margin-top: 20px; padding: 15px; background: rgba(220,53,69,0.1); border-radius: 8px; }
+
+        /* Toast уведомления */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            min-width: 300px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.4s ease;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--error); }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <button id="theme-toggle">🌙</button>
+    <h1>Профессиональный Помощник Авто</h1>
+    
+    <!-- Остальной HTML без изменений (оставляю прежним для краткости) -->
+    <!-- ... (весь предыдущий HTML из последней версии) ... -->
+
+    <div id="toast-container"></div>
+
+    <script>
+        const storageKey = 'proCarAssistantData_v5';
+        let data = { cars: {}, theme: 'light' };
+        let currentCarId = null;
+        const today = new Date();
+
+        // Функция показа уведомления
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            // Анимация появления
+            setTimeout(() => toast.classList.add('show'), 100);
+
+            // Автоисчезновение через 3 секунды
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (container.contains(toast)) container.removeChild(toast);
+                }, 400);
+            }, 3000);
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) data = JSON.parse(saved);
+            document.body.classList.toggle('dark', data.theme === 'dark');
+            renderCarSelect();
+        }
+
+        function saveData() {
+            localStorage.setItem(storageKey, JSON.stringify(data));
+        }
+
+        // ... (все функции renderCarSelect, getCurrentCar, updateAll, renderRecords, updateStats и т.д. — без изменений)
+
+        // Добавление записей с уведомлениями
+        document.getElementById('fuel-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const car = getCurrentCar();
+            if (!car) return showToast('Сначала выберите авто!', 'error');
+
+            // ... (код добавления заправки без изменений)
+
+            car.fuels.push({ /* ... */ });
+            saveData();
+            updateAll();
+            e.target.reset();
+            showToast('Заправка успешно добавлена!', 'success');
+        });
+
+        document.getElementById('expense-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const car = getCurrentCar();
+            if (!car) return showToast('Сначала выберите авто!', 'error');
+
+            // ... (код добавления расхода)
+
+            car.expenses.push({ /* ... */ });
+            saveData();
+            updateAll();
+            e.target.reset();
+            showToast('Расход/ТО успешно добавлен!', 'success');
+        });
+
+        document.getElementById('reminder-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const car = getCurrentCar();
+            if (!car) return showToast('Сначала выберите авто!', 'error');
+
+            // ... (код добавления напоминания)
+
+            car.reminders.push({ /* ... */ });
+            saveData();
+            renderReminders();
+            e.target.reset();
+            showToast('Напоминание о ТО добавлено!', 'success');
+        });
+
+        document.getElementById('docs-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const car = getCurrentCar();
+            if (!car) return showToast('Сначала выберите авто!', 'error');
+
+            // ... (код сохранения документов)
+
+            saveData();
+            updateAll();
+            e.target.reset();
+            showToast('Данные документов сохранены!', 'success');
+        });
+
+        // При добавлении нового авто
+        document.getElementById('add-car-form').addEventListener('submit', e => {
+            e.preventDefault();
+            // ... (код создания авто)
+            showToast(`Авто "${data.cars[id].name}" добавлено!`, 'success');
+            // ... остальной код
+        });
+
+        // При удалении записи (опционально)
+        // В renderRecords внутри обработчика delete-btn можно добавить:
+        // showToast('Запись удалена', 'success');
+
+        // Остальной код без изменений...
+
+        loadData();
+    </script>
+</body>
+</html>
