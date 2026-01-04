@@ -42,6 +42,7 @@
         th, td { border: 1px solid var(--border-color); padding: 10px; text-align: left; }
         th { background: var(--tab-bg); }
         .delete-btn { background: var(--delete-bg); color: white; padding: 6px 12px; border: none; cursor: pointer; }
+        .stats { font-size: 18px; display: grid; gap: 10px; }
         #car-select { font-size: 18px; margin-bottom: 20px; }
         #add-car-form { display: none; }
         .tab { display: inline-block; padding: 10px 20px; background: var(--tab-bg); cursor: pointer; margin-right: 5px; border-radius: 4px 4px 0 0; }
@@ -49,13 +50,13 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         canvas { max-width: 100%; margin-top: 20px; }
-        #theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 10px; border-radius: 50%; width: 50px; height: 50px; }
+        #theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 10px; border-radius: 50%; width: 50px; height: 50px; background: var(--section-bg); border: 1px solid var(--border-color); }
         .reminder { color: #dc3545; font-weight: bold; }
         .warning { color: #ffc107; font-weight: bold; }
         .ok { color: #28a745; }
         img { max-width: 100%; height: auto; border: 1px solid var(--border-color); border-radius: 4px; margin-top: 10px; }
         .doc-reminder { margin-top: 20px; padding: 15px; background: rgba(220,53,69,0.1); border-radius: 8px; }
-
+        
         /* Toast уведомления */
         #toast-container {
             position: fixed;
@@ -90,8 +91,138 @@
     <button id="theme-toggle">🌙</button>
     <h1>Профессиональный Помощник Авто</h1>
     
-    <!-- Остальной HTML без изменений (оставляю прежним для краткости) -->
-    <!-- ... (весь предыдущий HTML из последней версии) ... -->
+    <section id="car-management">
+        <h2>Управление автомобилями</h2>
+        <select id="car-select">
+            <option value="">Выберите авто...</option>
+        </select>
+        <button id="add-car-btn">Добавить новое авто</button>
+        <form id="add-car-form">
+            <input type="text" id="car-name" placeholder="Название (например, Моя Машина)" required>
+            <input type="text" id="car-model" placeholder="Модель (например, Toyota Camry)" required>
+            <input type="number" id="car-year" placeholder="Год выпуска" required>
+            <input type="number" id="car-initial-odo" placeholder="Начальный пробег (км)" required>
+            <button type="submit">Сохранить авто</button>
+            <button type="button" id="cancel-add-car">Отмена</button>
+        </form>
+        <button id="delete-car-btn" style="background: #dc3545; margin-left: 10px;">Удалить текущее авто</button>
+    </section>
+    
+    <section id="tabs">
+        <div class="tab active" data-tab="fuel">Заправки</div>
+        <div class="tab" data-tab="expenses">Расходы/ТО</div>
+        <div class="tab" data-tab="stats">Статистика</div>
+        <div class="tab" data-tab="records">История</div>
+        <div class="tab" data-tab="reminders">Напоминания ТО</div>
+        <div class="tab" data-tab="docs">Документы и полисы</div>
+        <div class="tab" data-tab="export">Экспорт/Импорт</div>
+    </section>
+    
+    <section class="tab-content active" id="fuel">
+        <h2>Добавить заправку</h2>
+        <form id="fuel-form">
+            <input type="date" id="fuel-date" required>
+            <input type="number" placeholder="Пробег (км)" id="fuel-odometer" required>
+            <input type="number" step="0.01" placeholder="Литры" id="fuel-liters" required>
+            <input type="number" step="0.01" placeholder="Цена за литр (руб)" id="fuel-price" required>
+            <button type="submit">Добавить</button>
+        </form>
+    </section>
+    
+    <section class="tab-content" id="expenses">
+        <h2>Добавить расход/ТО</h2>
+        <form id="expense-form">
+            <input type="date" id="exp-date" required>
+            <input type="number" placeholder="Пробег (км)" id="exp-odometer" required>
+            <select id="exp-category" required>
+                <option value="">Категория</option>
+                <option value="ТО">ТО</option>
+                <option value="Ремонт">Ремонт</option>
+                <option value="Мойка">Мойка</option>
+                <option value="Страховка">Страховка</option>
+                <option value="Штрафы">Штрафы</option>
+                <option value="Другое">Другое</option>
+            </select>
+            <input type="text" placeholder="Описание" id="exp-desc" required>
+            <input type="number" step="0.01" placeholder="Стоимость (руб)" id="exp-amount" required>
+            <button type="submit">Добавить</button>
+        </form>
+    </section>
+    
+    <section class="tab-content" id="stats">
+        <h2>Статистика по авто</h2>
+        <div class="stats" id="stats-summary"></div>
+        <canvas id="fuel-chart"></canvas>
+        <canvas id="expenses-chart"></canvas>
+    </section>
+    
+    <section class="tab-content" id="records">
+        <h2>История записей</h2>
+        <table id="records-table">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Тип</th>
+                    <th>Пробег (км)</th>
+                    <th>Категория</th>
+                    <th>Детали</th>
+                    <th>Стоимость (руб)</th>
+                    <th>Действие</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
+    
+    <section class="tab-content" id="reminders">
+        <h2>Напоминания о плановом ТО</h2>
+        <form id="reminder-form">
+            <input type="text" id="rem-desc" placeholder="Описание (например, Замена масла)" required>
+            <input type="number" id="rem-mileage" placeholder="Интервал по пробегу (км)" required>
+            <input type="number" id="rem-months" placeholder="Интервал по времени (месяцы)" required>
+            <input type="date" id="rem-last-date" placeholder="Дата последнего ТО" required>
+            <input type="number" id="rem-last-odo" placeholder="Пробег при последнем ТО (км)" required>
+            <button type="submit">Добавить напоминание</button>
+        </form>
+        <div id="reminders-list"></div>
+    </section>
+    
+    <section class="tab-content" id="docs">
+        <h2>Документы: Полис ОСАГО и Водительское удостоверение</h2>
+        
+        <div id="doc-reminders"></div>
+        
+        <form id="docs-form">
+            <h3>Страховой полис ОСАГО</h3>
+            <input type="text" id="policy-number" placeholder="Номер полиса">
+            <input type="date" id="policy-expire" placeholder="Дата окончания полиса" required>
+            <input type="file" id="policy-photo" accept="image/*">
+            
+            <h3>Водительское удостоверение</h3>
+            <input type="text" id="license-number" placeholder="Номер прав">
+            <input type="date" id="license-expire" placeholder="Дата окончания прав" required>
+            <input type="file" id="license-photo" accept="image/*">
+            
+            <button type="submit">Сохранить изменения</button>
+        </form>
+        
+        <div id="docs-display" style="margin-top: 30px;">
+            <h3>Текущий полис ОСАГО</h3>
+            <p id="policy-info"></p>
+            <img id="policy-img" alt="Фото полиса">
+            
+            <h3>Водительское удостоверение</h3>
+            <p id="license-info"></p>
+            <img id="license-img" alt="Фото прав">
+        </div>
+    </section>
+    
+    <section class="tab-content" id="export">
+        <h2>Экспорт/Импорт данных</h2>
+        <button id="export-btn">Экспорт в JSON</button>
+        <input type="file" id="import-file" accept=".json">
+        <button id="import-btn">Импорт из JSON</button>
+    </section>
 
     <div id="toast-container"></div>
 
@@ -101,7 +232,6 @@
         let currentCarId = null;
         const today = new Date();
 
-        // Функция показа уведомления
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -109,10 +239,8 @@
             toast.textContent = message;
             container.appendChild(toast);
 
-            // Анимация появления
             setTimeout(() => toast.classList.add('show'), 100);
 
-            // Автоисчезновение через 3 секунды
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => {
@@ -132,17 +260,321 @@
             localStorage.setItem(storageKey, JSON.stringify(data));
         }
 
-        // ... (все функции renderCarSelect, getCurrentCar, updateAll, renderRecords, updateStats и т.д. — без изменений)
+        function renderCarSelect() {
+            const select = document.getElementById('car-select');
+            select.innerHTML = '<option value="">Выберите авто...</option>';
+            Object.keys(data.cars).forEach(id => {
+                const car = data.cars[id];
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = `${car.name} (${car.model}, ${car.year})`;
+                select.appendChild(option);
+            });
+            if (currentCarId && data.cars[currentCarId]) {
+                select.value = currentCarId;
+                updateAll();
+            }
+        }
 
-        // Добавление записей с уведомлениями
+        function getCurrentCar() {
+            return currentCarId ? data.cars[currentCarId] : null;
+        }
+
+        function updateAll() {
+            renderRecords();
+            updateStats();
+            renderCharts();
+            renderReminders();
+            renderDocReminders();
+            renderDocs();
+        }
+
+        function renderRecords() {
+            const car = getCurrentCar();
+            if (!car) return;
+            const tbody = document.querySelector('#records-table tbody');
+            tbody.innerHTML = '';
+            
+            const allRecords = [...(car.fuels || []), ...(car.expenses || [])].sort((a,b) => new Date(b.date) - new Date(a.date));
+            allRecords.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.date}</td>
+                    <td>${item.type === 'fuel' ? 'Заправка' : 'Расход/ТО'}</td>
+                    <td>${item.odometer}</td>
+                    <td>${item.category || '-'}</td>
+                    <td>${item.details}</td>
+                    <td>${item.cost.toFixed(2)}</td>
+                    <td><button class="delete-btn" data-index="${index}" data-type="${item.type}">Удалить</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    const idx = parseInt(e.target.dataset.index);
+                    const type = e.target.dataset.type;
+                    if (type === 'fuel') car.fuels.splice(idx, 1);
+                    else car.expenses.splice(idx, 1);
+                    saveData();
+                    updateAll();
+                    showToast('Запись удалена', 'success');
+                });
+            });
+        }
+
+        function updateStats() {
+            const car = getCurrentCar();
+            if (!car) {
+                document.getElementById('stats-summary').innerHTML = '<p>Выберите авто для просмотра статистики.</p>';
+                return;
+            }
+            
+            const fuels = car.fuels || [];
+            const expenses = car.expenses || [];
+            
+            const totalFuelCost = fuels.reduce((sum, f) => sum + f.cost, 0);
+            const totalExpCost = expenses.reduce((sum, e) => sum + e.cost, 0);
+            const totalCost = totalFuelCost + totalExpCost;
+            
+            let avgConsumption = '-';
+            let totalDistance = 0;
+            if (fuels.length >= 2) {
+                const sortedFuels = [...fuels].sort((a,b) => a.odometer - b.odometer);
+                let totalLiters = 0;
+                for (let i = 1; i < sortedFuels.length; i++) {
+                    const dist = sortedFuels[i].odometer - sortedFuels[i-1].odometer;
+                    if (dist > 0) {
+                        totalLiters += sortedFuels[i].liters;
+                        totalDistance += dist;
+                    }
+                }
+                if (totalDistance > 0) avgConsumption = (totalLiters / totalDistance * 100).toFixed(2);
+            }
+            
+            const maxOdo = Math.max(car.initialOdo || 0, ...(car.fuels || []).map(f => f.odometer || 0), ...(car.expenses || []).map(e => e.odometer || 0));
+            const totalMileage = maxOdo - (car.initialOdo || 0);
+            
+            const expByCat = expenses.reduce((acc, e) => {
+                acc[e.category] = (acc[e.category] || 0) + e.cost;
+                return acc;
+            }, {});
+            
+            let catStats = '';
+            Object.keys(expByCat).forEach(cat => {
+                catStats += `<p>${cat}: <strong>${expByCat[cat].toFixed(2)} руб</strong></p>`;
+            });
+            
+            document.getElementById('stats-summary').innerHTML = `
+                <p>Общие расходы: <strong>${totalCost.toFixed(2)} руб</strong></p>
+                <p>На топливо: <strong>${totalFuelCost.toFixed(2)} руб</strong></p>
+                <p>Средний расход топлива: <strong>${avgConsumption}</strong> л/100 км</p>
+                <p>Общий пробег: <strong>${totalMileage} км</strong> (текущий: ${maxOdo} км)</p>
+                <h3>Расходы по категориям:</h3>
+                ${catStats}
+            `;
+        }
+
+        let fuelChart, expensesChart;
+
+        function renderCharts() {
+            const car = getCurrentCar();
+            if (!car) return;
+
+            const fuels = (car.fuels || []).sort((a,b) => new Date(a.date) - new Date(a.date));
+            const expenses = (car.expenses || []).sort((a,b) => new Date(a.date) - new Date(a.date));
+
+            if (fuelChart) fuelChart.destroy();
+            const fuelCtx = document.getElementById('fuel-chart').getContext('2d');
+            const fuelData = [];
+            for (let i = 1; i < fuels.length; i++) {
+                const dist = fuels[i].odometer - fuels[i-1].odometer;
+                if (dist > 0) {
+                    fuelData.push({ x: fuels[i].date, y: (fuels[i].liters / dist * 100).toFixed(2) });
+                }
+            }
+            fuelChart = new Chart(fuelCtx, {
+                type: 'line',
+                data: { datasets: [{ label: 'Расход топлива (л/100 км)', data: fuelData, borderColor: '#007bff', fill: false }] },
+                options: { scales: { x: { type: 'time', time: { unit: 'month' } }, y: { beginAtZero: false } } }
+            });
+
+            if (expensesChart) expensesChart.destroy();
+            const expCtx = document.getElementById('expenses-chart').getContext('2d');
+            const expByCat = expenses.reduce((acc, e) => {
+                acc[e.category] = (acc[e.category] || 0) + e.cost;
+                return acc;
+            }, {});
+            expensesChart = new Chart(expCtx, {
+                type: 'pie',
+                data: { labels: Object.keys(expByCat), datasets: [{ data: Object.values(expByCat), backgroundColor: ['#007bff','#dc3545','#28a745','#ffc107','#6f42c1','#fd7e14'] }] },
+                options: { responsive: true }
+            });
+        }
+
+        function renderReminders() {
+            const car = getCurrentCar();
+            if (!car) return;
+            const list = document.getElementById('reminders-list');
+            list.innerHTML = '';
+            const reminders = car.reminders || [];
+            const maxOdo = Math.max(car.initialOdo || 0, ...(car.fuels || []).map(f => f.odometer || 0), ...(car.expenses || []).map(e => e.odometer || 0));
+
+            reminders.forEach((rem, idx) => {
+                const lastDate = new Date(rem.lastDate);
+                const nextDate = new Date(lastDate);
+                nextDate.setMonth(nextDate.getMonth() + rem.months);
+                const mileageLeft = rem.lastOdo + rem.mileage - maxOdo;
+                const daysLeft = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
+                
+                let statusClass = 'ok';
+                let statusText = `${mileageLeft} км / ${daysLeft} дней осталось`;
+                if (mileageLeft <= 0 || daysLeft <= 0) statusClass = 'reminder', statusText = 'ПРОСРОЧЕНО!';
+                else if (mileageLeft <= 1000 || daysLeft <= 30) statusClass = 'warning', statusText = `Скоро: ${mileageLeft} км / ${daysLeft} дней`;
+
+                const div = document.createElement('div');
+                div.style.padding = '10px';
+                div.style.borderBottom = '1px solid var(--border-color)';
+                div.innerHTML = `
+                    <p><strong>${rem.desc}</strong></p>
+                    <p class="${statusClass}">${statusText}</p>
+                    <button class="delete-btn" data-idx="${idx}">Удалить</button>
+                `;
+                list.appendChild(div);
+            });
+
+            document.querySelectorAll('#reminders-list .delete-btn').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    const idx = parseInt(e.target.dataset.idx);
+                    car.reminders.splice(idx, 1);
+                    saveData();
+                    renderReminders();
+                    showToast('Напоминание удалено', 'success');
+                });
+            });
+        }
+
+        function renderDocReminders() {
+            const car = getCurrentCar();
+            if (!car) {
+                document.getElementById('doc-reminders').innerHTML = '';
+                return;
+            }
+            const docs = car.docs || { policy: {}, license: {} };
+            let html = '<h3>Напоминания по документам</h3>';
+
+            if (docs.policy.expire) {
+                const expireDate = new Date(docs.policy.expire);
+                const daysLeft = Math.ceil((expireDate - today) / (1000 * 60 * 60 * 24));
+                let className = daysLeft > 30 ? 'ok' : daysLeft > 0 ? 'warning' : 'reminder';
+                let text = daysLeft > 0 ? `${daysLeft} дней осталось` : 'ПРОСРОЧЕНО!';
+                html += `<div class="doc-reminder"><strong>Полис ОСАГО</strong> истекает ${docs.policy.expire}: <span class="${className}">${text}</span></div>`;
+            }
+
+            if (docs.license.expire) {
+                const expireDate = new Date(docs.license.expire);
+                const daysLeft = Math.ceil((expireDate - today) / (1000 * 60 * 60 * 24));
+                let className = daysLeft > 90 ? 'ok' : daysLeft > 0 ? 'warning' : 'reminder';
+                let text = daysLeft > 0 ? `${daysLeft} дней осталось` : 'ПРОСРОЧЕНО!';
+                html += `<div class="doc-reminder"><strong>Водительские права</strong> истекают ${docs.license.expire}: <span class="${className}">${text}</span></div>`;
+            }
+
+            if (!docs.policy.expire && !docs.license.expire) {
+                html += '<p>Нет данных о сроках действия документов.</p>';
+            }
+
+            document.getElementById('doc-reminders').innerHTML = html;
+        }
+
+        function renderDocs() {
+            const car = getCurrentCar();
+            if (!car) return;
+            const docs = car.docs || { policy: {}, license: {} };
+            
+            document.getElementById('policy-info').textContent = docs.policy.number ? `Номер: ${docs.policy.number}, Действует до: ${docs.policy.expire || 'не указано'}` : 'Данные о полисе не заполнены';
+            document.getElementById('policy-img').src = docs.policy.photo || '';
+            document.getElementById('policy-img').style.display = docs.policy.photo ? 'block' : 'none';
+            
+            document.getElementById('license-info').textContent = docs.license.number ? `Номер: ${docs.license.number}, Действует до: ${docs.license.expire || 'не указано'}` : 'Данные о правах не заполнены';
+            document.getElementById('license-img').src = docs.license.photo || '';
+            document.getElementById('license-img').style.display = docs.license.photo ? 'block' : 'none';
+        }
+
+        // Event listeners
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            data.theme = document.body.classList.contains('dark') ? 'dark' : 'light';
+            saveData();
+        });
+
+        document.getElementById('add-car-btn').addEventListener('click', () => {
+            document.getElementById('add-car-form').style.display = 'grid';
+        });
+
+        document.getElementById('cancel-add-car').addEventListener('click', () => {
+            document.getElementById('add-car-form').style.display = 'none';
+        });
+
+        document.getElementById('add-car-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const id = Date.now().toString();
+            const carName = document.getElementById('car-name').value;
+            data.cars[id] = {
+                name: carName,
+                model: document.getElementById('car-model').value,
+                year: parseInt(document.getElementById('car-year').value),
+                initialOdo: parseFloat(document.getElementById('car-initial-odo').value),
+                fuels: [],
+                expenses: [],
+                reminders: [],
+                docs: { policy: {}, license: {} }
+            };
+            currentCarId = id;
+            saveData();
+            renderCarSelect();
+            updateAll();
+            e.target.reset();
+            e.target.style.display = 'none';
+            showToast(`Авто "${carName}" успешно добавлено!`, 'success');
+        });
+
+        document.getElementById('car-select').addEventListener('change', e => {
+            currentCarId = e.target.value;
+            updateAll();
+        });
+
+        document.getElementById('delete-car-btn').addEventListener('click', () => {
+            if (currentCarId && confirm('Удалить это авто и все данные?')) {
+                const carName = data.cars[currentCarId].name;
+                delete data.cars[currentCarId];
+                currentCarId = null;
+                saveData();
+                renderCarSelect();
+                updateAll();
+                showToast(`Авто "${carName}" удалено`, 'success');
+            }
+        });
+
         document.getElementById('fuel-form').addEventListener('submit', e => {
             e.preventDefault();
             const car = getCurrentCar();
             if (!car) return showToast('Сначала выберите авто!', 'error');
-
-            // ... (код добавления заправки без изменений)
-
-            car.fuels.push({ /* ... */ });
+            const date = document.getElementById('fuel-date').value;
+            const odometer = parseFloat(document.getElementById('fuel-odometer').value);
+            const liters = parseFloat(document.getElementById('fuel-liters').value);
+            const price = parseFloat(document.getElementById('fuel-price').value);
+            const cost = liters * price;
+            
+            car.fuels.push({
+                type: 'fuel',
+                date,
+                odometer,
+                liters,
+                category: 'Топливо',
+                details: `${liters} л по ${price} руб/л`,
+                cost
+            });
+            
             saveData();
             updateAll();
             e.target.reset();
@@ -153,10 +585,21 @@
             e.preventDefault();
             const car = getCurrentCar();
             if (!car) return showToast('Сначала выберите авто!', 'error');
-
-            // ... (код добавления расхода)
-
-            car.expenses.push({ /* ... */ });
+            const date = document.getElementById('exp-date').value;
+            const odometer = parseFloat(document.getElementById('exp-odometer').value);
+            const category = document.getElementById('exp-category').value;
+            const desc = document.getElementById('exp-desc').value;
+            const amount = parseFloat(document.getElementById('exp-amount').value);
+            
+            car.expenses.push({
+                type: 'expense',
+                date,
+                odometer,
+                category,
+                details: desc,
+                cost: amount
+            });
+            
             saveData();
             updateAll();
             e.target.reset();
@@ -167,10 +610,14 @@
             e.preventDefault();
             const car = getCurrentCar();
             if (!car) return showToast('Сначала выберите авто!', 'error');
-
-            // ... (код добавления напоминания)
-
-            car.reminders.push({ /* ... */ });
+            if (!car.reminders) car.reminders = [];
+            car.reminders.push({
+                desc: document.getElementById('rem-desc').value,
+                mileage: parseInt(document.getElementById('rem-mileage').value),
+                months: parseInt(document.getElementById('rem-months').value),
+                lastDate: document.getElementById('rem-last-date').value,
+                lastOdo: parseFloat(document.getElementById('rem-last-odo').value)
+            });
             saveData();
             renderReminders();
             e.target.reset();
@@ -181,28 +628,79 @@
             e.preventDefault();
             const car = getCurrentCar();
             if (!car) return showToast('Сначала выберите авто!', 'error');
-
-            // ... (код сохранения документов)
-
-            saveData();
-            updateAll();
+            if (!car.docs) car.docs = { policy: {}, license: {} };
+            
+            if (document.getElementById('policy-number').value) car.docs.policy.number = document.getElementById('policy-number').value;
+            if (document.getElementById('policy-expire').value) car.docs.policy.expire = document.getElementById('policy-expire').value;
+            
+            if (document.getElementById('license-number').value) car.docs.license.number = document.getElementById('license-number').value;
+            if (document.getElementById('license-expire').value) car.docs.license.expire = document.getElementById('license-expire').value;
+            
+            const policyFile = document.getElementById('policy-photo').files[0];
+            if (policyFile) {
+                const reader = new FileReader();
+                reader.onload = ev => { car.docs.policy.photo = ev.target.result; saveData(); updateAll(); };
+                reader.readAsDataURL(policyFile);
+            }
+            
+            const licenseFile = document.getElementById('license-photo').files[0];
+            if (licenseFile) {
+                const reader = new FileReader();
+                reader.onload = ev => { car.docs.license.photo = ev.target.result; saveData(); updateAll(); };
+                reader.readAsDataURL(licenseFile);
+            }
+            
+            if (!policyFile && !licenseFile) {
+                saveData();
+                updateAll();
+            }
+            
             e.target.reset();
             showToast('Данные документов сохранены!', 'success');
         });
 
-        // При добавлении нового авто
-        document.getElementById('add-car-form').addEventListener('submit', e => {
-            e.preventDefault();
-            // ... (код создания авто)
-            showToast(`Авто "${data.cars[id].name}" добавлено!`, 'success');
-            // ... остальной код
+        // Tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', e => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                e.target.classList.add('active');
+                document.getElementById(e.target.dataset.tab).classList.add('active');
+                if (e.target.dataset.tab === 'stats') renderCharts();
+                if (e.target.dataset.tab === 'reminders') renderReminders();
+                if (e.target.dataset.tab === 'docs') { renderDocReminders(); renderDocs(); }
+            });
         });
 
-        // При удалении записи (опционально)
-        // В renderRecords внутри обработчика delete-btn можно добавить:
-        // showToast('Запись удалена', 'success');
+        // Export/Import
+        document.getElementById('export-btn').addEventListener('click', () => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'car_data.json';
+            a.click();
+            showToast('Данные экспортированы в файл', 'success');
+        });
 
-        // Остальной код без изменений...
+        document.getElementById('import-btn').addEventListener('click', () => {
+            const file = document.getElementById('import-file').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    try {
+                        data = JSON.parse(e.target.result);
+                        saveData();
+                        renderCarSelect();
+                        updateAll();
+                        showToast('Данные успешно импортированы!', 'success');
+                    } catch (err) {
+                        showToast('Ошибка при импорте файла!', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
 
         loadData();
     </script>
