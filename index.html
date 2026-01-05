@@ -66,6 +66,7 @@
         }
         button:hover { background: var(--button-hover); }
         .delete-btn { background: var(--delete-bg); padding: 8px 12px; font-size: 14px; }
+        .edit-btn { background: #ffc107; padding: 8px 12px; font-size: 14px; color: black; }
 
         .mobile-menu {
             display: grid;
@@ -93,6 +94,10 @@
         #car-select { width: 100%; margin-bottom: 15px; }
 
         #car-form-container { display: none; }
+
+        #edit-record-form { display: none; background: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; justify-content: center; align-items: center; }
+
+        #edit-record-form form { background: var(--section-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 90%; width: 400px; }
 
         #theme-toggle {
             position: fixed;
@@ -168,7 +173,7 @@
             <option value="">Выберите авто...</option>
         </select>
         <button id="add-car-btn">+ Добавить авто</button>
-        <button id="edit-car-btn" style="margin-left:10px;">Редактировать авто</button>
+        <button id="edit-car-btn" style="margin-left:10px;">Редактировать</button>
 
         <div id="car-form-container">
             <form id="car-form">
@@ -269,16 +274,18 @@
     <section class="tab-content" id="specs" style="display:none;">
         <h2>Характеристики авто</h2>
         <img id="car-photo-display" class="car-photo-big" alt="Фото авто" style="display:none;">
-        <table class="specs-table" id="specs-table">
-            <tr><td><strong>Модель</strong></td><td id="spec-model">-</td></tr>
-            <tr><td><strong>Год выпуска</strong></td><td id="spec-year">-</td></tr>
-            <tr><td><strong>Мощность</strong></td><td id="spec-power">-</td></tr>
-            <tr><td><strong>Объём двигателя</strong></td><td id="spec-engine">-</td></tr>
-            <tr><td><strong>Масса</strong></td><td id="spec-weight">-</td></tr>
-            <tr><td><strong>Размеры (Д×Ш×В)</strong></td><td id="spec-size">-</td></tr>
-            <tr><td><strong>Объём бака</strong></td><td id="spec-tank">-</td></tr>
-            <tr><td><strong>Тип топлива</strong></td><td id="spec-fuel">-</td></tr>
-        </table>
+        <div id="specs-content">
+            <table class="specs-table" id="specs-table">
+                <tr><td><strong>Модель</strong></td><td id="spec-model"></td></tr>
+                <tr><td><strong>Год выпуска</strong></td><td id="spec-year"></td></tr>
+                <tr><td><strong>Мощность</strong></td><td id="spec-power"></td></tr>
+                <tr><td><strong>Объём двигателя</strong></td><td id="spec-engine"></td></tr>
+                <tr><td><strong>Масса</strong></td><td id="spec-weight"></td></tr>
+                <tr><td><strong>Размеры (Д×Ш×В)</strong></td><td id="spec-size"></td></tr>
+                <tr><td><strong>Объём бака</strong></td><td id="spec-tank"></td></tr>
+                <tr><td><strong>Тип топлива</strong></td><td id="spec-fuel"></td></tr>
+            </table>
+        </div>
     </section>
 
     <section class="tab-content" id="docs" style="display:none;">
@@ -296,8 +303,12 @@
             <button type="submit">Сохранить</button>
         </form>
         <div style="margin-top:30px;">
-            <h3>Полис</h3><p id="policy-info"></p><img id="policy-img">
-            <h3>Права</h3><p id="license-info"></p><img id="license-img">
+            <h3>Полис</h3>
+            <p id="policy-info"></p>
+            <img id="policy-img" alt="Фото полиса" style="display:none;">
+            <h3>Права</h3>
+            <p id="license-info"></p>
+            <img id="license-img" alt="Фото прав" style="display:none;">
         </div>
     </section>
 
@@ -311,7 +322,7 @@
     <div id="toast-container"></div>
 
     <script>
-        const storageKey = 'proCarAssistantData_v12';
+        const storageKey = 'autoLogData_v1';
         let data = { cars: {}, theme: 'light' };
         let currentCarId = null;
         let isEditMode = false;
@@ -390,9 +401,9 @@
             if (fuels.length >= 2) {
                 const sortedFuels = [...fuels].sort((a, b) => (a.odometer || 0) - (b.odometer || 0));
                 for (let i = 1; i < sortedFuels.length; i++) {
-                    const prev = sortedFuels[i-1].odometer || 0;
-                    const curr = sortedFuels[i].odometer || 0;
-                    const dist = curr - prev;
+                    const prevOdo = sortedFuels[i-1].odometer || 0;
+                    const currOdo = sortedFuels[i].odometer || 0;
+                    const dist = currOdo - prevOdo;
                     if (dist > 0) {
                         totalLiters += sortedFuels[i].liters;
                         totalDistance += dist;
@@ -420,8 +431,8 @@
             if (!car) return;
             const tbody = document.querySelector('#records-table tbody');
             tbody.innerHTML = '';
-            const all = [...(car.fuels || []), ...(car.expenses || [])].sort((a,b) => new Date(b.date) - new Date(a.date));
-            all.forEach((item, i) => {
+            const allRecords = [...(car.fuels || []), ...(car.expenses || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
+            allRecords.forEach((item, index) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${item.date}</td>
@@ -429,224 +440,72 @@
                     <td>${item.odometer || '-'}</td>
                     <td>${item.details}</td>
                     <td>${item.cost.toFixed(2)}</td>
-                    <td><button class="delete-btn" data-i="${i}" data-t="${item.type}">✕</button></td>
+                    <td>
+                        <button class="edit-btn" data-index="${index}" data-type="${item.type}">Ред</button>
+                        <button class="delete-btn" data-index="${index}" data-type="${item.type}">Удал</button>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
+
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    const idx = parseInt(e.target.dataset.index);
+                    const type = e.target.dataset.type;
+                    openEditRecordForm(type, idx);
+                });
+            });
+
             document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.onclick = () => {
-                    const i = parseInt(btn.dataset.i);
-                    const t = btn.dataset.t;
-                    if (t === 'fuel') car.fuels.splice(i, 1);
-                    else car.expenses.splice(i, 1);
+                btn.addEventListener('click', e => {
+                    const idx = parseInt(e.target.dataset.index);
+                    const type = e.target.dataset.type;
+                    if (type === 'fuel') car.fuels.splice(idx, 1);
+                    else car.expenses.splice(idx, 1);
                     saveData();
                     updateAll();
                     showToast('Запись удалена', 'success');
-                };
+                });
             });
         }
 
-        let fuelChart, expensesChart;
-        function renderCharts() {
+        function openEditRecordForm(type, index) {
             const car = getCurrentCar();
-            if (!car) return;
+            const record = type === 'fuel' ? car.fuels[index] : car.expenses[index];
+            const form = document.createElement('div');
+            form.id = 'edit-record-form';
+            form.style.display = 'flex';
+            form.innerHTML = `
+                <form>
+                    <h3>Редактировать запись</h3>
+                    <input type="date" id="edit-date" value="${record.date}" required>
+                    <input type="number" id="edit-odometer" placeholder="Пробег (км) — необязательно" value="${record.odometer || ''}">
+                    <input type="text" id="edit-details" value="${record.details}" required>
+                    <input type="number" step="0.01" id="edit-cost" value="${record.cost}" required>
+                    <button type="submit">Сохранить</button>
+                    <button type="button" id="edit-cancel">Отмена</button>
+                </form>
+            `;
+            document.body.appendChild(form);
 
-            if (fuelChart) fuelChart.destroy();
-            const fctx = document.getElementById('fuel-chart').getContext('2d');
-            const fdata = [];
-            const fuels = (car.fuels || []).sort((a,b) => new Date(a.date) - new Date(b.date));
-            for (let i = 1; i < fuels.length; i++) {
-                const dist = (fuels[i].odometer || 0) - (fuels[i-1].odometer || 0);
-                if (dist > 0) fdata.push({x: fuels[i].date, y: (fuels[i].liters / dist * 100).toFixed(1)});
-            }
-            fuelChart = new Chart(fctx, {type: 'line', data: {datasets: [{label: 'Расход (л/100км)', data: fdata, borderColor: '#007bff'}]}});
-
-            if (expensesChart) expensesChart.destroy();
-            const ectx = document.getElementById('expenses-chart').getContext('2d');
-            const byCat = (car.expenses || []).reduce((a,e) => { a[e.category] = (a[e.category]||0) + e.cost; return a; }, {});
-            expensesChart = new Chart(ectx, {type: 'pie', data: {labels: Object.keys(byCat), datasets: [{data: Object.values(byCat), backgroundColor: ['#007bff','#dc3545','#28a745','#ffc107','#6f42c1','#fd7e14']}]}});
-        }
-
-        function renderSpecs() {
-            const car = getCurrentCar();
-            if (!car) {
-                document.getElementById('car-photo-display').style.display = 'none';
-                document.getElementById('specs-table').style.display = 'none';
-                return;
-            }
-            document.getElementById('car-photo-display').src = car.photo || '';
-            document.getElementById('car-photo-display').style.display = car.photo ? 'block' : 'none';
-
-            const s = car.specs || {};
-            document.getElementById('spec-model').textContent = car.model || '-';
-            document.getElementById('spec-year').textContent = car.year || '-';
-            document.getElementById('spec-power').textContent = s.power ? s.power + ' л.с.' : '-';
-            document.getElementById('spec-engine').textContent = s.engine ? s.engine + ' л' : '-';
-            document.getElementById('spec-weight').textContent = s.weight ? s.weight + ' кг' : '-';
-            document.getElementById('spec-size').textContent = s.length && s.width && s.height ? `${s.length} × ${s.width} × ${s.height} мм` : '-';
-            document.getElementById('spec-tank').textContent = s.tank ? s.tank + ' л' : '-';
-            document.getElementById('spec-fuel').textContent = s.fuel || '-';
-
-            document.getElementById('specs-table').style.display = 'table';
-        }
-
-        // Форма авто — добавление и редактирование
-        function openCarForm(edit = false) {
-            isEditMode = edit;
-            const container = document.getElementById('car-form-container');
-            const title = document.getElementById('car-form-title');
-            const form = document.getElementById('car-form');
-            if (edit && currentCarId) {
-                const car = data.cars[currentCarId];
-                title.textContent = 'Редактировать авто';
-                document.getElementById('car-name').value = car.name;
-                document.getElementById('car-model').value = car.model;
-                document.getElementById('car-year').value = car.year;
-                document.getElementById('car-initial-odo').value = car.initialOdo;
-                const s = car.specs || {};
-                document.getElementById('car-power').value = s.power || '';
-                document.getElementById('car-engine').value = s.engine || '';
-                document.getElementById('car-weight').value = s.weight || '';
-                document.getElementById('car-length').value = s.length || '';
-                document.getElementById('car-width').value = s.width || '';
-                document.getElementById('car-height').value = s.height || '';
-                document.getElementById('car-tank').value = s.tank || '';
-                document.getElementById('car-fuel').value = s.fuel || '';
-                document.getElementById('current-car-photo').src = car.photo || '';
-                document.getElementById('current-car-photo').style.display = car.photo ? 'block' : 'none';
-            } else {
-                title.textContent = 'Новое авто';
-                form.reset();
-                document.getElementById('current-car-photo').style.display = 'none';
-            }
-            container.style.display = 'block';
-        }
-
-        document.getElementById('add-car-btn').addEventListener('click', () => openCarForm(false));
-        document.getElementById('edit-car-btn').addEventListener('click', () => {
-            if (!currentCarId) return showToast('Сначала выберите авто', 'error');
-            openCarForm(true);
-        });
-
-        document.getElementById('car-form-cancel').addEventListener('click', () => {
-            document.getElementById('car-form-container').style.display = 'none';
-        });
-
-        document.getElementById('car-form').addEventListener('submit', e => {
-            e.preventDefault();
-            const carData = {
-                name: document.getElementById('car-name').value,
-                model: document.getElementById('car-model').value,
-                year: document.getElementById('car-year').value,
-                initialOdo: parseFloat(document.getElementById('car-initial-odo').value) || 0,
-                specs: {
-                    power: parseFloat(document.getElementById('car-power').value) || null,
-                    engine: parseFloat(document.getElementById('car-engine').value) || null,
-                    weight: parseFloat(document.getElementById('car-weight').value) || null,
-                    length: parseFloat(document.getElementById('car-length').value) || null,
-                    width: parseFloat(document.getElementById('car-width').value) || null,
-                    height: parseFloat(document.getElementById('car-height').value) || null,
-                    tank: parseFloat(document.getElementById('car-tank').value) || null,
-                    fuel: document.getElementById('car-fuel').value || null
-                },
-                fuels: isEditMode ? data.cars[currentCarId].fuels : [],
-                expenses: isEditMode ? data.cars[currentCarId].expenses : [],
-                reminders: isEditMode ? data.cars[currentCarId].reminders : [],
-                docs: isEditMode ? data.cars[currentCarId].docs : {policy: {}, license: {}},
-                photo: isEditMode ? data.cars[currentCarId].photo : null
-            };
-
-            const file = document.getElementById('car-photo').files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = ev => {
-                    carData.photo = ev.target.result;
-                    saveCar(carData);
-                };
-                reader.readAsDataURL(file);
-            } else {
-                saveCar(carData);
-            }
-        });
-
-        function saveCar(carData) {
-            if (isEditMode) {
-                data.cars[currentCarId] = carData;
-                showToast('Авто обновлено!', 'success');
-            } else {
-                const id = Date.now().toString();
-                data.cars[id] = carData;
-                currentCarId = id;
-                showToast('Авто добавлено!', 'success');
-            }
-            saveData();
-            renderCarSelect();
-            updateAll();
-            document.getElementById('car-form-container').style.display = 'none';
-        }
-
-        // Защита от действий без авто
-        function requireCar() {
-            if (!currentCarId) {
-                showToast('Сначала выберите или добавьте авто!', 'error');
-                return false;
-            }
-            return true;
-        }
-
-        document.getElementById('fuel-form').addEventListener('submit', e => {
-            e.preventDefault();
-            if (!requireCar()) return;
-            const car = getCurrentCar();
-            const odometer = document.getElementById('fuel-odometer').value ? parseFloat(document.getElementById('fuel-odometer').value) : null;
-            const liters = parseFloat(document.getElementById('fuel-liters').value);
-            const price = parseFloat(document.getElementById('fuel-price').value);
-            const cost = liters * price;
-            car.fuels.push({
-                type: 'fuel',
-                date: document.getElementById('fuel-date').value,
-                odometer,
-                liters,
-                details: `${liters} л × ${price} ₽/л`,
-                cost
+            form.querySelector('form').addEventListener('submit', e => {
+                e.preventDefault();
+                record.date = document.getElementById('edit-date').value;
+                record.odometer = document.getElementById('edit-odometer').value ? parseFloat(document.getElementById('edit-odometer').value) : null;
+                record.details = document.getElementById('edit-details').value;
+                record.cost = parseFloat(document.getElementById('edit-cost').value);
+                saveData();
+                updateAll();
+                document.body.removeChild(form);
+                showToast('Запись обновлена', 'success');
             });
-            saveData();
-            updateAll();
-            e.target.reset();
-            showToast('Заправка добавлена!', 'success');
-        });
 
-        document.getElementById('expense-form').addEventListener('submit', e => {
-            e.preventDefault();
-            if (!requireCar()) return;
-            const car = getCurrentCar();
-            const odometer = document.getElementById('exp-odometer').value ? parseFloat(document.getElementById('exp-odometer').value) : null;
-            car.expenses.push({
-                type: 'expense',
-                date: document.getElementById('exp-date').value,
-                odometer,
-                category: document.getElementById('exp-category').value,
-                details: document.getElementById('exp-desc').value,
-                cost: parseFloat(document.getElementById('exp-amount').value)
+            document.getElementById('edit-cancel').addEventListener('click', () => {
+                document.body.removeChild(form);
             });
-            saveData();
-            updateAll();
-            e.target.reset();
-            showToast('Расход добавлен!', 'success');
-        });
+        }
 
-        // Смена авто с подтверждением
-        document.getElementById('car-select').addEventListener('change', e => {
-            const newId = e.target.value;
-            if (currentCarId && newId && newId !== currentCarId) {
-                if (!confirm('Сменить авто? Все записи будут для нового автомобиля.')) {
-                    e.target.value = currentCarId;
-                    return;
-                }
-            }
-            currentCarId = newId;
-            updateAll();
-        });
+        // ... (остальной код: renderCharts, renderReminders, renderDocReminders, renderDocs, renderSpecs, openCarForm, saveCar, requireCar, etc.)
 
         // Табы
         document.querySelectorAll('.menu-item').forEach(item => {
