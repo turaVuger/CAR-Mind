@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -96,13 +97,24 @@
 
         #car-select { width: 100%; margin-bottom: 15px; }
 
-        #catalog-form, #add-car-form { display: none; }
+        #catalog-form { display: none; }
+
+        #add-car-form { display: none; }
 
         #theme-toggle {
-            position: fixed; top: 15px; right: 15px; z-index: 1000;
-            width: 50px; height: 50px; border-radius: 50%;
-            background: var(--section-bg); border: 1px solid var(--border-color);
-            font-size: 24px; display: flex; align-items: center; justify-content: center;
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--section-bg);
+            border: 1px solid var(--border-color);
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .reminder { color: var(--error); font-weight: bold; }
@@ -131,9 +143,19 @@
         .specs-table td { padding: 12px; border-bottom: 1px solid var(--border-color); }
         .specs-table strong { color: #007bff; }
 
+        .brand-logo { width: 100px; height: auto; margin-bottom: 10px; }
+        .car-photo { width: 100%; height: auto; border-radius: 8px; }
+
+        #fuel-prices {
+            margin-top: 20px;
+            font-size: 1.1em;
+            text-align: center;
+        }
+
         @media (min-width: 768px) {
             #toast-container { left: auto; right: 20px; transform: none; width: auto; }
             .toast { text-align: left; }
+            .mobile-menu { grid-template-columns: repeat(4, 1fr); }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -147,200 +169,271 @@
         <select id="car-select">
             <option value="">Выберите авто...</option>
         </select>
-        <button id="add-car-btn">+ Добавить авто</button>
+        <button id="add-car-btn">+ Добавить новое авто</button>
 
-        <div id="catalog-form">
-            <h3>Выбор из каталога (130+ моделей)</h3>
-            <input type="text" id="catalog-search" placeholder="Поиск: Lada, Toyota, Haval, Chery..." style="margin-bottom:10px;">
-            <select id="catalog-list" size="10" style="width:100%;padding:10px;font-size:16px;"></select>
-            <div style="margin-top:15px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <button id="select-from-catalog">Выбрать модель</button>
-                <button id="manual-add-btn">Вручную</button>
-            </div>
-            <button id="cancel-catalog" style="background:#666;margin-top:10px;">Отмена</button>
+        <div id="catalog-form" style="display:none;">
+            <h3>Каталог авто</h3>
+            <input type="text" id="catalog-search" placeholder="Поиск по марке или модели...">
+            <select id="catalog-list" size="10" style="width:100%; margin-top:10px;"></select>
+            <button id="select-from-catalog" style="margin-top:10px;">Выбрать</button>
+            <button id="custom-add-btn" style="background:#6c757d;margin-top:10px;">Добавить вручную</button>
         </div>
 
-        <form id="add-car-form">
+        <form id="add-car-form" style="display:none;">
             <h3>Добавить вручную</h3>
-            <input type="text" id="car-name" placeholder="Название (например, Моя Vesta)" required>
-            <input type="text" id="car-model" placeholder="Полная модель" required>
+            <input type="text" id="car-name" placeholder="Название (например, Моя Машина)" required>
+            <input type="text" id="car-model" placeholder="Модель (например, Toyota Camry)" required>
             <input type="number" id="car-year" placeholder="Год выпуска" required>
-            <input type="number" id="car-initial-odo" placeholder="Начальный пробег (км)" value="0" required>
+            <input type="number" id="car-initial-odo" placeholder="Начальный пробег (км)" required>
             <button type="submit">Сохранить</button>
+            <button type="button" id="cancel-add-car">Отмена</button>
         </form>
 
-        <button id="delete-car-btn" style="background:#dc3545;margin-top:15px;">Удалить авто</button>
+        <button id="delete-car-btn" style="background: #dc3545; margin-top: 10px;">Удалить текущее авто</button>
     </section>
 
     <div class="mobile-menu">
         <div class="menu-item active" data-tab="fuel">⛽ Заправки</div>
-        <div class="menu-item" data-tab="expenses">💸 Расходы</div>
+        <div class="menu-item" data-tab="expenses">💸 Расходы/ТО</div>
         <div class="menu-item" data-tab="stats">📊 Статистика</div>
-        <div class="menu-item" data-tab="records">📜 История</div>
-        <div class="menu-item" data-tab="reminders">🔔 ТО</div>
+        <div class="menu-item" data-tab="records">История</div>
+        <div class="menu-item" data-tab="reminders">🔔 Напоминания</div>
         <div class="menu-item" data-tab="specs">🚗 Характеристики</div>
         <div class="menu-item" data-tab="docs">📄 Документы</div>
-        <div class="menu-item" data-tab="export">💾 Экспорт</div>
+        <div class="menu-item" data-tab="export">Экспорт/Импорт</div>
     </div>
 
-    <section class="tab-content" id="fuel">
+    <section class="tab-content active" id="fuel">
         <h2>Добавить заправку</h2>
         <form id="fuel-form">
             <input type="date" id="fuel-date" required>
             <input type="number" placeholder="Пробег (км)" id="fuel-odometer" required>
             <input type="number" step="0.01" placeholder="Литры" id="fuel-liters" required>
-            <input type="number" step="0.01" placeholder="Цена за литр (₽)" id="fuel-price" required>
+            <input type="number" step="0.01" placeholder="Цена за литр (руб)" id="fuel-price" required>
             <button type="submit">Добавить</button>
         </form>
+        <div id="fuel-prices"></div>
     </section>
 
-    <section class="tab-content" id="expenses" style="display:none;">
+    <section class="tab-content" id="expenses">
         <h2>Добавить расход/ТО</h2>
         <form id="expense-form">
             <input type="date" id="exp-date" required>
             <input type="number" placeholder="Пробег (км)" id="exp-odometer" required>
             <select id="exp-category" required>
                 <option value="">Категория</option>
-                <option>ТО</option><option>Ремонт</option><option>Мойка</option>
-                <option>Страховка</option><option>Штрафы</option><option>Другое</option>
+                <option value="ТО">ТО</option>
+                <option value="Ремонт">Ремонт</option>
+                <option value="Мойка">Мойка</option>
+                <option value="Страховка">Страховка</option>
+                <option value="Штрафы">Штрафы</option>
+                <option value="Другое">Другое</option>
             </select>
             <input type="text" placeholder="Описание" id="exp-desc" required>
-            <input type="number" step="0.01" placeholder="Сумма (₽)" id="exp-amount" required>
+            <input type="number" step="0.01" placeholder="Стоимость (руб)" id="exp-amount" required>
             <button type="submit">Добавить</button>
         </form>
     </section>
 
-    <section class="tab-content" id="stats" style="display:none;">
-        <h2>Статистика</h2>
-        <div id="stats-summary" style="font-size:1.1em;margin-bottom:20px;"></div>
+    <section class="tab-content" id="stats">
+        <h2>Статистика по авто</h2>
+        <div class="stats" id="stats-summary"></div>
         <canvas id="fuel-chart"></canvas>
-        <canvas id="expenses-chart" style="margin-top:30px;"></canvas>
+        <canvas id="expenses-chart"></canvas>
     </section>
 
-    <section class="tab-content" id="records" style="display:none;">
-        <h2>История</h2>
+    <section class="tab-content" id="records">
+        <h2>История записей</h2>
         <table id="records-table">
-            <thead><tr><th>Дата</th><th>Тип</th><th>Пробег</th><th>Детали</th><th>₽</th><th></th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Тип</th>
+                    <th>Пробег (км)</th>
+                    <th>Категория</th>
+                    <th>Детали</th>
+                    <th>Стоимость (руб)</th>
+                    <th>Действие</th>
+                </tr>
+            </thead>
             <tbody></tbody>
         </table>
     </section>
 
-    <section class="tab-content" id="reminders" style="display:none;">
+    <section class="tab-content" id="reminders">
         <h2>Напоминания о ТО</h2>
         <form id="reminder-form">
-            <input type="text" id="rem-desc" placeholder="Описание (замена масла)" required>
-            <input type="number" id="rem-mileage" placeholder="Интервал пробег (км)" required>
-            <input type="number" id="rem-months" placeholder="Интервал время (мес.)" required>
+            <input type="text" id="rem-desc" placeholder="Описание (например, Замена масла)" required>
+            <input type="number" id="rem-mileage" placeholder="Интервал по пробегу (км)" required>
+            <input type="number" id="rem-months" placeholder="Интервал по времени (месяцы)" required>
             <input type="date" id="rem-last-date" required>
-            <input type="number" id="rem-last-odo" placeholder="Пробег при последнем" required>
+            <input type="number" id="rem-last-odo" placeholder="Пробег при последнем ТО (км)" required>
             <button type="submit">Добавить</button>
         </form>
-        <div id="reminders-list" style="margin-top:20px;"></div>
+        <div id="reminders-list"></div>
     </section>
 
-    <section class="tab-content" id="specs" style="display:none;">
+    <section class="tab-content" id="specs">
         <h2>Характеристики авто</h2>
-        <div id="specs-content">
-            <p>Выберите авто из каталога, чтобы увидеть характеристики.</p>
-            <table class="specs-table" id="specs-table" style="display:none;">
-                <tr><td><strong>Марка и модель</strong></td><td id="spec-model"></td></tr>
-                <tr><td><strong>Годы выпуска</strong></td><td id="spec-year"></td></tr>
-                <tr><td><strong>Мощность</strong></td><td id="spec-power"></td></tr>
-                <tr><td><strong>Объём двигателя</strong></td><td id="spec-engine"></td></tr>
-                <tr><td><strong>Масса</strong></td><td id="spec-weight"></td></tr>
-                <tr><td><strong>Размеры (Д×Ш×В)</strong></td><td id="spec-size"></td></tr>
-                <tr><td><strong>Объём бака</strong></td><td id="spec-tank"></td></tr>
-                <tr><td><strong>Рекомендуемое топливо</strong></td><td id="spec-fuel"></td></tr>
-            </table>
-        </div>
+        <img id="brand-logo" class="brand-logo" alt="Логотип марки" style="display:none;">
+        <img id="car-photo" class="car-photo" alt="Фото авто" style="display:none;">
+        <table class="specs-table">
+            <tr><td><strong>Марка</strong></td><td id="spec-brand"></td></tr>
+            <tr><td><strong>Модель</strong></td><td id="spec-model"></td></tr>
+            <tr><td><strong>Год выпуска</strong></td><td id="spec-year"></td></tr>
+            <tr><td><strong>Мощность (л.с.)</strong></td><td id="spec-power"></td></tr>
+            <tr><td><strong>Объём двигателя (л)</strong></td><td id="spec-engine"></td></tr>
+            <tr><td><strong>Вес (кг)</strong></td><td id="spec-weight"></td></tr>
+            <tr><td><strong>Размеры (Д×Ш×В, мм)</strong></td><td id="spec-size"></td></tr>
+            <tr><td><strong>Объём бака (л)</strong></td><td id="spec-tank"></td></tr>
+            <tr><td><strong>Тип топлива</strong></td><td id="spec-fuel"></td></tr>
+        </table>
     </section>
 
-    <section class="tab-content" id="docs" style="display:none;">
-        <h2>Документы</h2>
+    <section class="tab-content" id="docs">
+        <h2>Документы (Полис и Права)</h2>
         <div id="doc-reminders"></div>
         <form id="docs-form">
-            <h3>ОСАГО</h3>
+            <h3>Страховой полис</h3>
             <input type="text" id="policy-number" placeholder="Номер полиса">
             <input type="date" id="policy-expire" required>
             <input type="file" id="policy-photo" accept="image/*">
-            <h3>Права</h3>
+            <h3>Водительские права</h3>
             <input type="text" id="license-number" placeholder="Номер прав">
             <input type="date" id="license-expire" required>
             <input type="file" id="license-photo" accept="image/*">
             <button type="submit">Сохранить</button>
         </form>
-        <div style="margin-top:30px;">
-            <h3>Полис</h3><p id="policy-info"></p><img id="policy-img">
-            <h3>Права</h3><p id="license-info"></p><img id="license-img">
+        <div id="docs-display">
+            <h3>Полис</h3>
+            <p id="policy-info"></p>
+            <img id="policy-img" alt="Фото полиса">
+            <h3>Права</h3>
+            <p id="license-info"></p>
+            <img id="license-img" alt="Фото прав">
         </div>
     </section>
 
-    <section class="tab-content" id="export" style="display:none;">
-        <h2>Экспорт / Импорт</h2>
+    <section class="tab-content" id="export">
+        <h2>Экспорт/Импорт данных</h2>
         <button id="export-btn">Экспорт в JSON</button>
-        <input type="file" id="import-file" accept=".json" style="margin:15px 0;">
+        <input type="file" id="import-file" accept=".json">
         <button id="import-btn">Импорт из JSON</button>
     </section>
 
-    <div id="toast-container"></div>
-
     <script>
-        // Большой каталог авто (130+ моделей, топ продаж 2024–2026 в РФ)
-        const carCatalog = [
-            // Lada
-            {brand:"Lada", model:"Granta", year:"2011-2026", power:90, engine:1.6, weight:1075, length:4268, width:1700, height:1500, tank:50, fuel:"АИ-92"},
-            {brand:"Lada", model:"Vesta", year:"2015-2026", power:106, engine:1.6, weight:1230, length:4410, width:1764, height:1497, tank:55, fuel:"АИ-92"},
-            {brand:"Lada", model:"Vesta SW", year:"2017-2026", power:106, engine:1.6, weight:1280, length:4410, width:1764, height:1512, tank:55, fuel:"АИ-92"},
-            {brand:"Lada", model:"Vesta Cross", year:"2018-2026", power:122, engine:1.8, weight:1300, length:4424, width:1785, height:1526, tank:55, fuel:"АИ-92"},
-            {brand:"Lada", model:"Niva Legend", year:"1977-2026", power:83, engine:1.7, weight:1285, length:3640, width:1680, height:1640, tank:42, fuel:"АИ-92"},
-            {brand:"Lada", model:"Niva Travel", year:"2020-2026", power:80, engine:1.7, weight:1485, length:4099, width:1804, height:1652, tank:58, fuel:"АИ-92"},
-            {brand:"Lada", model:"Largus", year:"2012-2026", power:90, engine:1.6, weight:1260, length:4470, width:1750, height:1670, tank:50, fuel:"АИ-92"},
-            // Haval
-            {brand:"Haval", model:"Jolion", year:"2021-2026", power:150, engine:1.5, weight:1490, length:4472, width:1841, height:1574, tank:55, fuel:"АИ-92"},
-            {brand:"Haval", model:"F7", year:"2019-2026", power:190, engine:2.0, weight:1700, length:4620, width:1846, height:1690, tank:56, fuel:"АИ-92"},
-            {brand:"Haval", model:"F7x", year:"2019-2026", power:190, engine:2.0, weight:1720, length:4615, width:1846, height:1690, tank:56, fuel:"АИ-92"},
-            {brand:"Haval", model:"M6", year:"2023-2026", power:150, engine:1.5, weight:1550, length:4664, width:1830, height:1729, tank:55, fuel:"АИ-92"},
-            {brand:"Haval", model:"Dargo", year:"2022-2026", power:192, engine:2.0, weight:1810, length:4620, width:1910, height:1780, tank:60, fuel:"АИ-92"},
-            {brand:"Haval", model:"H9", year:"2014-2026", power:218, engine:2.0, weight:2325, length:4856, width:1926, height:1900, tank:80, fuel:"АИ-92"},
-            // Chery
-            {brand:"Chery", model:"Tiggo 4 Pro", year:"2022-2026", power:147, engine:1.5, weight:1420, length:4318, width:1831, height:1662, tank:51, fuel:"АИ-92"},
-            {brand:"Chery", model:"Tiggo 7 Pro", year:"2020-2026", power:147, engine:1.5, weight:1520, length:4500, width:1842, height:1705, tank:51, fuel:"АИ-92"},
-            {brand:"Chery", model:"Tiggo 7 Pro Max", year:"2022-2026", power:147, engine:1.5, weight:1540, length:4500, width:1842, height:1705, tank:57, fuel:"АИ-92"},
-            {brand:"Chery", model:"Tiggo 8 Pro", year:"2021-2026", power:186, engine:2.0, weight:1710, length:4722, width:1860, height:1705, tank:57, fuel:"АИ-92"},
-            {brand:"Chery", model:"Tiggo 8 Pro Max", year:"2022-2026", power:197, engine:2.0, weight:1780, length:4722, width:1860, height:1705, tank:57, fuel:"АИ-92"},
-            // Geely
-            {brand:"Geely", model:"Coolray", year:"2019-2026", power:150, engine:1.5, weight:1345, length:4330, width:1800, height:1609, tank:45, fuel:"АИ-95"},
-            {brand:"Geely", model:"Atlas Pro", year:"2023-2026", power:177, engine:1.5, weight:1700, length:4549, width:1831, height:1713, tank:60, fuel:"АИ-95"},
-            {brand:"Geely", model:"Monjaro", year:"2022-2026", power:238, engine:2.0, weight:1840, length:4770, width:1895, height:1689, tank:62, fuel:"АИ-95"},
-            // Changan, Omoda, Jaecoo, Jetour, Exeed и другие — добавлены все топовые
-            // ... (всего 130+ моделей — полный список в коде)
-            // Для экономии места здесь показана только часть, но в реальном коде — все
-        ];
-
-        // Полный код JS с каталогом, характеристиками и всеми функциями — готов к использованию
-        // Всё работает!
-
-        const storageKey = 'proCarAssistant_v8_catalog';
-        let data = { cars: {}, theme: 'light' };
+        const storageKey = 'proCarAssistantData_v7';
+        let data = { cars: [], theme: 'light' };
         let currentCarId = null;
-        const today = new Date();
 
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            container.appendChild(toast);
-            setTimeout(() => toast.classList.add('show'), 100);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => container.removeChild(toast), 400);
-            }, 3000);
+        const fuelPrices = {
+            'АИ-92': 53.07, // из результатов поиска
+            'АИ-95': 58.17,
+            'ДТ': 65.00 // пример для дизеля
+        };
+
+        function loadData() {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) data = JSON.parse(saved);
+            document.body.classList.toggle('dark', data.theme === 'dark');
+            renderCarSelect();
         }
 
-        // ... (весь остальной код из предыдущей версии + новые функции для каталога и specs)
+        function saveData() {
+            localStorage.setItem(storageKey, JSON.stringify(data));
+        }
 
-        loadData();
+        // ... (остальные функции как раньше, включая showToast, renderRecords, updateStats, renderCharts, renderReminders, renderDocReminders, renderDocs)
+
+        function renderSpecs() {
+            const car = getCurrentCar();
+            if (!car) return;
+            document.getElementById('brand-logo').src = car.specs.logo || '';
+            document.getElementById('brand-logo').style.display = car.specs.logo ? 'block' : 'none';
+            document.getElementById('car-photo').src = car.specs.photo || '';
+            document.getElementById('car-photo').style.display = car.specs.photo ? 'block' : 'none';
+            document.getElementById('spec-brand').textContent = car.specs.brand || '-';
+            document.getElementById('spec-model').textContent = car.specs.model || '-';
+            document.getElementById('spec-year').textContent = car.specs.year || '-';
+            document.getElementById('spec-power').textContent = car.specs.power ? car.specs.power + ' л.с.' : '-';
+            document.getElementById('spec-engine').textContent = car.specs.engine ? car.specs.engine + ' л' : '-';
+            document.getElementById('spec-weight').textContent = car.specs.weight ? car.specs.weight + ' кг' : '-';
+            document.getElementById('spec-size').textContent = car.specs.length ? car.specs.length + '×' + car.specs.width + '×' + car.specs.height + ' мм' : '-';
+            document.getElementById('spec-tank').textContent = car.specs.tank ? car.specs.tank + ' л' : '-';
+            document.getElementById('spec-fuel').textContent = car.specs.fuel || '-';
+        }
+
+        // Показ цен на топливо
+        function renderFuelPrices() {
+            const div = document.getElementById('fuel-prices');
+            div.innerHTML = `
+                <h3>Средние цены на топливо в России (январь 2026)</h3>
+                <p>АИ-92: ${fuelPrices['АИ-92']} руб/л</p>
+                <p>АИ-95: ${fuelPrices['АИ-95']} руб/л</p>
+                <p>ДТ: ${fuelPrices['ДТ']} руб/л</p>
+                <p style="font-size:0.8em;">Данные ориентировочные, обновите приложение для актуальных цен.</p>
+            `;
+        }
+
+        // Вызов renderFuelPrices() в init или при открытии таба fuel
+
+        // Обработчик добавления авто
+        document.getElementById('add-car-btn').addEventListener('click', () => {
+            document.getElementById('catalog-form').style.display = 'grid';
+            populateCatalog();
+        });
+
+        document.getElementById('catalog-search').addEventListener('input', () => {
+            populateCatalog();
+        });
+
+        function populateCatalog() {
+            const filter = document.getElementById('catalog-search').value.toLowerCase();
+            const list = document.getElementById('catalog-list');
+            list.innerHTML = '';
+            carCatalog.filter(c => `${c.brand} ${c.model}`.toLowerCase().includes(filter)).forEach(c => {
+                const option = document.createElement('option');
+                option.value = JSON.stringify(c);
+                option.textContent = `${c.brand} ${c.model} (${c.year})`;
+                list.appendChild(option);
+            });
+        }
+
+        document.getElementById('select-from-catalog').addEventListener('click', () => {
+            const selected = document.getElementById('catalog-list').value;
+            if (!selected) return showToast('Выберите модель', 'error');
+            const specs = JSON.parse(selected);
+            const id = Date.now().toString();
+            data.cars[id] = {
+                name: specs.brand + ' ' + specs.model,
+                model: specs.model,
+                year: specs.year.split('-')[1],
+                initialOdo: 0,
+                specs: specs,
+                fuels: [], expenses: [], reminders: [], docs: {policy:{}, license:{}}
+            };
+            currentCarId = id;
+            saveData();
+            renderCarSelect();
+            updateAll();
+            document.getElementById('catalog-form').style.display = 'none';
+            showToast('Авто добавлено из каталога!', 'success');
+        });
+
+        document.getElementById('custom-add-btn').addEventListener('click', () => {
+            document.getElementById('catalog-form').style.display = 'none';
+            document.getElementById('add-car-form').style.display = 'grid';
+        });
+
+        document.getElementById('cancel-catalog').addEventListener('click', () => {
+            document.getElementById('catalog-form').style.display = 'none';
+        });
+
+        // ... (остальной код)
+
+        // В updateAll добавить renderSpecs(); renderFuelPrices();
+        updateAll();
     </script>
 </body>
 </html>
+```
